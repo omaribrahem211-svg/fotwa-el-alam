@@ -1,0 +1,534 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>فتوة</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+
+<style>
+@font-face { font-family: 'Cairo'; src: url('fonts/Cairo.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'Aref Ruqaa'; src: url('fonts/ArefRuqaa-Bold.ttf') format('truetype'); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: 'Reem Kufi'; src: url('fonts/ReemKufi.ttf') format('truetype'); font-weight: 400 700; font-display: swap; }
+/* Layout: full-screen 3D fight; HUD plates on top (hero left, rival right), joystick bottom-left, action pad bottom-right. */
+:root {
+  --night: #0b0a10;
+  --plate: rgba(12, 9, 7, 0.78);
+  --brass: #d9a441;
+  --brass-hi: #f2d98a;
+  --cream: #f2e6c9;
+  --muted: #c9b99a;
+  --hero: #3e9e5c;
+  --rival: #b8382a;
+  --display: 'Aref Ruqaa', 'Amiri', serif;
+  --body: 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+  --num: 'Reem Kufi', 'Cairo', sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--night); color: var(--cream); font-family: var(--body); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; transform: translateZ(0); overflow: hidden; }
+html.rot #app { left: var(--vw); width: var(--vh); height: var(--vw); transform-origin: top left; transform: rotate(90deg); }
+#stage { position: absolute; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+[hidden] { display: none !important; }
+button { font-family: var(--body); }
+button:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+
+/* ---------- HUD top ---------- */
+.hud { position: fixed; top: 0; left: 0; right: 0; z-index: 4; pointer-events: none; direction: ltr;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+  background: linear-gradient(180deg, rgba(8,6,4,0.8), rgba(8,6,4,0)); padding-bottom: 18px; }
+.plate { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.plate.r { align-items: flex-end; }
+.nm { font-family: var(--display); font-size: clamp(17px, 3.2vw, 24px); line-height: 1.1; color: var(--brass-hi); text-shadow: 0 2px 0 #000; direction: rtl; }
+.plate.r .nm { color: #f4c4b4; }
+.bar { position: relative; width: min(100%, 360px); height: 14px; border: 2px solid var(--brass); border-radius: 3px; background: #140e08; overflow: hidden; box-shadow: 0 0 0 1px #000; }
+.plate.r .bar { border-color: #a8433a; }
+.bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; transition: width .18s; }
+.bar i.trail { background: rgba(242,230,201,0.45); transition: width .8s .25s; }
+.bar i.fill { background: linear-gradient(180deg, #9ee0a8, var(--hero) 50%, #1d5e34); }
+.plate.r .bar i { left: auto; right: 0; }
+.plate.r .bar i.fill { background: linear-gradient(180deg, #f0a08a, var(--rival) 50%, #6e1414); }
+.row2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: min(100%, 360px); direction: ltr; }
+.duo2 { display: flex; align-items: center; gap: 5px; direction: ltr; min-width: 0; }
+.duo2[hidden] { display: none; }
+.duo2 .nm { font-size: clamp(12px, 2.2vw, 16px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.bar.sm { height: 9px; width: clamp(50px, 12vw, 110px); }
+.hb { width: min(150px, 22vw) !important; }
+.plate.r .nm.tgt::after, .duo2 .nm.tgt::after { content: ' ◀'; color: #ffd27a; font-size: 0.7em; }
+.lv .tags { display: flex; flex-wrap: wrap; gap: 3px; } .lv .tags i { font-style: normal; font-size: 10px; padding: 0 5px; border-radius: 6px; background: rgba(217,164,65,0.18); color: var(--brass-hi); }
+.lv .tags i.duo { background: rgba(232,100,30,0.3); color: #ffd8b8; } .lv .tags i.wx { background: rgba(120,160,220,0.2); color: #cfe0ff; }
+.foeRow { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px dashed rgba(184,56,42,0.4); } .foeRow:last-child { border-bottom: 0; }
+.foeRow .wpn { font-size: 12px; color: #ffd8b8; }
+.envLine { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; } .envLine b { background: rgba(242,230,201,0.08); border: 1px solid rgba(217,164,65,0.35); border-radius: 8px; padding: 2px 8px; font-weight: 800; color: var(--cream); }
+.haiba { display: flex; align-items: center; gap: 6px; direction: rtl; }
+.haiba span { font-size: 11px; font-weight: 800; color: var(--brass-hi); text-shadow: 0 1px 0 #000; }
+.hb { width: min(150px, 30vw); height: 6px; border-radius: 3px; background: rgba(242,230,201,0.12); overflow: hidden; }
+.hb i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #e0a830, #fff0b0); transition: width .2s; }
+.hb.full i { box-shadow: 0 0 10px #f2d98a; }
+.mid { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.clock { width: 64px; height: 52px; display: grid; place-items: end center; padding-bottom: 4px; box-sizing: border-box;
+  clip-path: polygon(50% 0, 82% 14%, 100% 40%, 100% 100%, 0 100%, 0 40%, 18% 14%); background: linear-gradient(180deg, #24382c, #0e1712); border-bottom: 2px solid var(--brass);
+  font-family: var(--num); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.hype { width: 86px; height: 5px; border-radius: 3px; background: rgba(242,230,201,0.12); overflow: hidden; }
+.hype i { display: block; height: 100%; background: linear-gradient(90deg, #e0a830, #ff6a1a); width: 30%; transition: width .3s; }
+.mid small { font-size: 10px; color: var(--muted); font-weight: 800; direction: rtl; }
+
+.topbtns { position: fixed; z-index: 6; top: calc(84px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; gap: 6px; direction: rtl; }
+.topbtns button { min-width: 44px; min-height: 36px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(217,164,65,0.5); background: var(--plate); color: var(--cream); font-size: 12px; font-weight: 600; cursor: pointer; }
+
+/* ---------- center messages ---------- */
+#banner { position: fixed; left: 0; right: 0; top: 34%; z-index: 5; text-align: center; pointer-events: none; direction: rtl;
+  font-family: var(--display); font-size: clamp(36px, 8vw, 64px); color: var(--brass-hi); text-shadow: 0 3px 0 #5a2a00, 0 0 28px #ff9a3a; opacity: 0; transform: scale(.9); transition: opacity .15s, transform .15s; }
+#banner.on { opacity: 1; transform: scale(1); }
+#shout { position: fixed; left: 50%; top: calc(96px + env(safe-area-inset-top, 0px)); transform: translateX(-50%) rotate(-2deg); z-index: 5; pointer-events: none; direction: rtl;
+  font-family: var(--display); font-size: clamp(15px, 2.6vw, 20px); padding: 2px 14px; border-radius: 14px; background: rgba(10,6,4,0.65); opacity: 0; transition: opacity .3s; white-space: nowrap; }
+#shout.on { opacity: 1; }
+.pops { position: fixed; top: 28%; z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: 4px; font-family: var(--num); font-size: 22px; direction: rtl; }
+#popL { left: max(18px, env(safe-area-inset-left, 0px)); align-items: flex-start; color: #bff0c8; }
+#popR { right: max(18px, env(safe-area-inset-right, 0px)); align-items: flex-end; color: #ffc8b8; }
+.pops b { text-shadow: 0 2px 0 #000; animation: pop 0.9s forwards; }
+@keyframes pop { 0% { opacity: 0; transform: translateY(8px) scale(.8); } 15% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+
+/* ---------- controls ---------- */
+.joy { position: fixed; z-index: 4; left: max(18px, env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: 132px; height: 132px; border-radius: 50%;
+  border: 2px solid rgba(217,164,65,0.4); background: radial-gradient(circle, rgba(242,230,201,0.08), rgba(242,230,201,0.02) 70%); touch-action: none; }
+.joy .knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff4d8, #c9a042); box-shadow: 0 6px 14px #000a; }
+.pad { position: fixed; z-index: 4; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 236px; height: 200px; direction: ltr; }
+.pad button { position: absolute; border-radius: 50%; border: 2px solid var(--brass); background: radial-gradient(circle at 50% 30%, rgba(46,68,54,0.92), rgba(14,23,18,0.92)); color: var(--cream);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; font-size: 12px; font-weight: 800; box-shadow: 0 6px 14px #0009; touch-action: none; cursor: pointer; padding: 0; }
+.pad button kbd { font-family: var(--num); font-size: 10px; color: var(--muted); font-weight: 400; }
+.pad button.down { transform: scale(0.93); filter: brightness(1.3); }
+#bPunch { right: 96px; bottom: 0; width: 70px; height: 70px; }
+#bKick { right: 16px; bottom: 74px; width: 64px; height: 64px; }
+#bGrab { right: 170px; bottom: 6px; width: 58px; height: 58px; }
+#bBlock { right: 96px; bottom: 82px; width: 58px; height: 58px; border-color: rgba(242,230,201,0.5); background: radial-gradient(circle at 50% 30%, rgba(58,51,42,0.92), rgba(14,11,8,0.92)); }
+#bItem { right: 176px; bottom: 76px; width: 54px; height: 54px; border-color: rgba(242,230,201,0.4); }
+#bItem.ready { border-color: var(--brass-hi); box-shadow: 0 0 14px rgba(242,217,138,0.6); }
+#bFin { right: 8px; bottom: 0; width: 72px; height: 72px; border: 3px solid #fff0c8; background: radial-gradient(circle at 50% 30%, #8a7a5a, #4a3e28); color: #2a1600; }
+#bFin.ready { background: radial-gradient(circle at 50% 30%, #fff2c0, #e0a830 60%, #9a6a1e); box-shadow: 0 0 0 4px rgba(242,217,138,0.3), 0 0 24px rgba(242,217,138,0.8); }
+#bFin kbd { color: #3a2a10; }
+#bFin.active { background: radial-gradient(circle at 50% 30%, #ffd9a0, #e8641e 55%, #8a1e0a); border-color: #ffe0b0; color: #fff6e0; animation: finPulse 0.6s ease-in-out infinite alternate; }
+#bFin.cool { filter: grayscale(0.7) brightness(0.75); }
+#finLbl { display: block; line-height: 1.05; }
+@keyframes finPulse { from { box-shadow: 0 0 0 3px rgba(255,140,40,0.35), 0 0 16px rgba(255,120,30,0.7); } to { box-shadow: 0 0 0 7px rgba(255,140,40,0.15), 0 0 34px rgba(255,150,40,1); } }
+.itemTag { position: absolute; z-index: 5; pointer-events: none; transform: translate(-50%, -100%); padding: 3px 8px; border-radius: 10px; background: rgba(20,14,8,0.78); border: 1px solid var(--brass-hi); color: var(--cream); font: 700 12px/1.2 var(--body); white-space: nowrap; }
+#bDodge { right: 28px; bottom: 148px; width: 50px; height: 50px; border-color: rgba(242,230,201,0.4); font-size: 11px; }
+.weapon { position: fixed; z-index: 4; left: max(160px, calc(env(safe-area-inset-left, 0px) + 160px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); direction: rtl; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(217,164,65,0.5); background: var(--plate); font-size: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 96px; }
+.weapon b { font-size: 13px; }
+.weapon .pips { display: flex; gap: 3px; }
+.weapon .pips i { width: 12px; height: 5px; border-radius: 1px; background: #3a2e1e; }
+.weapon .pips i.on { background: var(--brass-hi); }
+@media (max-width: 700px) { .weapon { left: auto; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(222px + env(safe-area-inset-bottom, 0px)); } }
+@media (hover: hover) and (pointer: fine) { .joy { display: none; } }
+@media (hover: none) { .pad button kbd { display: none; } }
+
+/* ---------- overlays ---------- */
+.overlay { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; direction: rtl; text-align: center; overscroll-behavior: contain;
+  background: radial-gradient(ellipse at 50% 40%, rgba(20,14,10,0.55), rgba(8,6,4,0.92)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px; overflow-y: auto; }
+.card { max-width: 560px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.title { font-family: var(--display); font-size: clamp(54px, 13vw, 96px); line-height: 1; color: var(--brass); text-shadow: 0 4px 0 #2a1600; }
+.sub { font-size: 15px; color: var(--muted); max-width: 46ch; }
+.go { margin-top: 6px; font-size: 18px; font-weight: 900; color: #1a1206; background: linear-gradient(180deg, var(--brass-hi), var(--brass)); border: 0; border-radius: 10px; padding: 12px 34px; min-height: 52px; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+.help { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; font-size: 13px; color: var(--cream); text-align: right; margin-top: 8px; background: rgba(0,0,0,0.35); border: 1px solid rgba(217,164,65,0.3); border-radius: 10px; padding: 12px 14px; }
+.help kbd { font-family: var(--num); background: rgba(242,230,201,0.1); border: 1px solid rgba(242,230,201,0.25); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.help .t { grid-column: 1 / -1; color: var(--brass-hi); font-weight: 800; }
+.note { font-size: 12px; color: var(--muted); max-width: 52ch; }
+#loader .track { width: min(260px, 70vw); height: 4px; border-radius: 2px; background: rgba(242,230,201,0.12); margin: 16px auto 0; overflow: hidden; }
+#loader .fill { height: 100%; width: 6%; background: var(--brass); transition: width .3s; }
+#err { color: #ffb4a0; font-size: 13px; }
+.result { font-family: var(--display); font-size: clamp(44px, 10vw, 76px); color: var(--brass-hi); text-shadow: 0 3px 0 #5a2a00; }
+/* ---------- menus ---------- */
+.overlay > * { margin: auto; flex: none; }
+.panel { width: min(760px, 100%); max-height: none; display: flex; flex-direction: column; gap: 8px; background: rgba(16,11,7,0.92); border: 1px solid rgba(217,164,65,0.45); border-radius: 14px; padding: 12px 14px; text-align: right; }
+.panel.wide { width: min(860px, 100%); }
+#levels .panel, #pre .panel, #shop .panel { max-height: calc(var(--fh, 100vh) - 24px); }
+.scroll { scrollbar-width: thin; }
+.scroll { overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; min-height: 0; }
+.pHead { display: flex; align-items: center; gap: 10px; } .pHead > b { font-family: var(--display); font-size: 26px; color: var(--brass-hi); white-space: nowrap; }
+.x, .ghost { font-family: var(--body); font-weight: 800; color: var(--cream); background: rgba(242,230,201,0.07); border: 1px solid rgba(217,164,65,0.55); border-radius: 10px; padding: 8px 16px; min-height: 44px; cursor: pointer; }
+.x { margin-inline-start: auto; min-height: 40px; padding: 6px 14px; }
+.ghost.small { min-height: 36px; font-size: 13px; padding: 4px 12px; }
+.ghost:active, .x:active { filter: brightness(1.3); }
+.title.sm { font-size: clamp(34px, 7vw, 54px); text-align: right; }
+.menuPanel { width: min(620px, 100%); gap: 10px; }
+.mTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.who { color: var(--cream); font-size: 15px; } .who b { color: var(--brass-hi); font-size: 18px; }
+.coins { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(217,164,65,0.5); border-radius: 20px; padding: 4px 12px 4px 8px; font-family: var(--num); font-size: 18px; color: var(--brass-hi); }
+.coin { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2c0, #d9a441 55%, #8a5a1a); box-shadow: inset 0 0 0 2px rgba(90,50,10,0.5); }
+.mNext { background: rgba(242,217,138,0.06); border: 1px solid rgba(217,164,65,0.3); border-radius: 10px; padding: 8px 12px; font-size: 14px; color: var(--cream); }
+.mNext b { color: var(--brass-hi); }
+.mBtns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .mBtns .go { grid-column: 1 / -1; margin: 0; }
+.nameRow { display: flex; align-items: center; gap: 10px; margin-top: 8px; direction: rtl; }
+.nameRow .pre { font-family: var(--display); font-size: 34px; color: var(--brass-hi); }
+#nameIn { font-family: var(--body); font-size: 22px; font-weight: 800; width: 220px; padding: 8px 12px; border-radius: 10px; border: 2px solid var(--brass); background: rgba(0,0,0,0.5); color: var(--cream); text-align: right; touch-action: manipulation; user-select: text; -webkit-user-select: text; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; touch-action: pan-x; }
+.tabs button { flex: none; font-family: var(--body); font-weight: 800; font-size: 13px; color: var(--muted); background: transparent; border: 1px solid rgba(217,164,65,0.35); border-radius: 8px; padding: 6px 10px; min-height: 38px; }
+.tabs button.on { color: #1a1206; background: var(--brass); }
+.chSub { font-size: 13px; color: var(--muted); }
+.lvGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding-bottom: 4px; }
+.lv { position: relative; text-align: right; font-family: var(--body); color: var(--cream); background: rgba(242,230,201,0.06); border: 1px solid rgba(217,164,65,0.4); border-radius: 10px; padding: 6px 8px; min-height: 74px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.lv .n { font-family: var(--num); color: var(--brass-hi); font-size: 16px; } .lv .p { font-size: 12px; line-height: 1.25; } .lv .f { font-size: 11px; color: var(--muted); }
+.lv .st { font-size: 12px; color: var(--brass-hi); letter-spacing: 1px; } .lv.boss { border-color: #e8641e; }
+.lv.lock { opacity: 0.38; cursor: default; } .lv.cur { box-shadow: 0 0 0 2px var(--brass-hi), 0 0 18px rgba(242,217,138,0.5); }
+.preBody { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; }
+.foeCard { background: rgba(184,56,42,0.12); border: 1px solid rgba(184,56,42,0.5); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.foeName { font-family: var(--display); font-size: 30px; color: #ffcfb0; line-height: 1.1; } .foeNick { color: var(--muted); font-size: 14px; }
+.meter { display: flex; align-items: center; gap: 8px; font-size: 12px; } .meter span { width: 40px; color: var(--muted); } .meter i { flex: 1; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; } .meter b { display: block; height: 100%; background: linear-gradient(90deg, #e8641e, #ffd27a); }
+.loadout { display: flex; flex-direction: column; gap: 6px; } .lh { font-size: 13px; color: var(--brass-hi); font-weight: 800; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--body); font-size: 13px; font-weight: 700; color: var(--cream); background: rgba(242,230,201,0.06); border: 1px solid rgba(217,164,65,0.4); border-radius: 20px; padding: 6px 12px; min-height: 38px; cursor: pointer; }
+.chip.on { background: var(--brass); color: #1a1206; border-color: var(--brass-hi); } .chip[disabled] { opacity: 0.4; cursor: default; }
+.shopList { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.sItem { background: rgba(242,230,201,0.05); border: 1px solid rgba(217,164,65,0.35); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.sItem .nm2 { font-weight: 900; color: var(--brass-hi); } .sItem .d { font-size: 12px; color: var(--muted); flex: 1; }
+.sItem .row { display: flex; align-items: center; justify-content: space-between; gap: 6px; } .sItem .price { font-family: var(--num); color: var(--brass-hi); display: inline-flex; gap: 4px; align-items: center; }
+.sItem button { font-family: var(--body); font-weight: 900; border-radius: 8px; padding: 6px 14px; min-height: 38px; border: 0; background: var(--brass); color: #1a1206; cursor: pointer; } .sItem button[disabled] { opacity: 0.45; cursor: default; }
+.sec { grid-column: 1 / -1; font-weight: 900; color: var(--cream); margin-top: 4px; }
+.cardPanel { width: min(820px, 100%); } .cardWrap { display: flex; gap: 14px; align-items: center; min-height: 0; }
+#cardImg { height: min(82vh, 340px); aspect-ratio: 4 / 5; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.6); background: #1d140d; }
+html.rot #cardImg { height: min(82vw, 340px); }
+.cardSide { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.stars { font-size: 34px; letter-spacing: 6px; color: var(--brass-hi); } .stars .off { color: rgba(242,230,201,0.18); }
+.endBtns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; } .endBtns .go { margin: 0; }
+#homeBtn { }
+@media (max-height: 420px) { .title.sm { font-size: 30px; } .menuPanel { gap: 6px; } .mBtns .ghost { min-height: 40px; padding: 4px 10px; } .mNext { padding: 6px 10px; font-size: 13px; } .panel { padding: 8px 10px; } .lv { min-height: 62px; } .foeName { font-size: 24px; } }
+@media (max-width: 560px) { .lvGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .preBody { grid-template-columns: 1fr; } .mBtns { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cardWrap { flex-direction: column; } }
+@media (prefers-reduced-motion: reduce) { .pops b { animation-duration: 0.01s; } #banner { transition: none; } }
+</style>
+
+<div id="app">
+<div id="stage" role="img" aria-label="نزال ثلاثي الأبعاد في حارة مصرية قديمة"></div>
+
+<div class="hud" aria-live="off">
+  <div class="plate l">
+    <div class="nm" id="nm1">المعلم</div>
+    <div class="bar"><i class="trail" id="t1"></i><i class="fill" id="hp1"></i></div>
+    <div class="haiba"><span>الهيبة</span><div class="hb" id="hb1w"><i id="hb1"></i></div></div>
+  </div>
+  <div class="mid">
+    <div class="clock" id="clock">٩٩</div>
+    <div class="hype"><i id="hype"></i></div>
+    <small>حماس الحارة</small>
+  </div>
+  <div class="plate r">
+    <div class="nm" id="nm2">دهشان</div>
+    <div class="bar"><i class="trail" id="t2"></i><i class="fill" id="hp2"></i></div>
+    <div class="row2"><div class="duo2" id="duo2" hidden><div class="bar sm"><i class="trail" id="t3"></i><i class="fill" id="hp3"></i></div><div class="nm" id="nm3"></div></div><div class="haiba"><div class="hb" id="hb2w"><i id="hb2"></i></div><span>الهيبة</span></div></div>
+  </div>
+</div>
+<div class="topbtns">
+  <button type="button" id="qBtn" aria-label="الجودة">جودة: عالية</button>
+  <button type="button" id="mBtn" aria-pressed="false">الصوت</button>
+  <button type="button" id="homeBtn">القايمة</button>
+</div>
+
+<div id="banner"></div>
+<div id="shout"></div>
+<div class="pops" id="popL"></div><div class="pops" id="popR"></div>
+
+<div class="joy" id="joy" aria-hidden="true"><div class="knob" id="knob"></div></div>
+<div class="weapon" id="weapon" hidden><span>في إيدك</span><b id="wName"></b><div class="pips" id="wPips"></div></div>
+<div class="pad" id="pad">
+  <button type="button" id="bPunch" data-act="punch">ضربة<kbd>J</kbd></button>
+  <button type="button" id="bKick" data-act="kick">رِجل<kbd>K</kbd></button>
+  <button type="button" id="bGrab" data-act="grab">مسكة<kbd>L</kbd></button>
+  <button type="button" id="bBlock" data-act="block">صد<kbd>Space</kbd></button>
+  <button type="button" id="bItem" data-act="item"><span id="itemLbl">التقط</span><kbd>E</kbd></button>
+  <button type="button" id="bFin" data-act="finisher"><span id="finLbl">الفتوة</span><kbd>F</kbd></button>
+  <button type="button" id="bDodge" data-act="dodge">تفادي<kbd>Shift</kbd></button>
+</div>
+
+<div class="overlay" id="nameDlg" hidden>
+  <div class="card">
+    <div class="title">فتوة العالم</div>
+    <div class="sub">أهلًا يا معلم. اكتب اسمك، وهيتنادى عليك بيه في الحارة وفي كل مصر.</div>
+    <form id="nameForm" class="nameRow">
+      <span class="pre">المعلم</span>
+      <input id="nameIn" maxlength="14" autocomplete="off" placeholder="اسمك" required>
+    </form>
+    <button type="submit" form="nameForm" class="go">يلا بينا</button>
+  </div>
+</div>
+
+<div class="overlay" id="menu" hidden>
+  <div class="panel menuPanel">
+    <div class="mTop">
+      <div><div class="title sm">فتوة العالم</div><div class="who"><b id="mName">المعلم</b> · <span id="mRank"></span></div></div>
+      <div class="coins" title="فلوسك"><span class="coin"></span><b id="mCoins">٠</b></div>
+    </div>
+    <div class="mNext" id="mNext"></div>
+    <div class="mBtns">
+      <button type="button" class="go" id="playBtn">كمّل المشوار</button>
+      <button type="button" class="ghost" id="lvBtn">المستويات</button>
+      <button type="button" class="ghost" id="shopBtn">المتجر</button>
+      <button type="button" class="ghost" id="cardBtn">كارت الفتوة</button>
+      <button type="button" class="ghost" id="helpBtn">إزاي ألعب</button>
+      <button type="button" class="ghost small" id="renameBtn">غيّر اسمك</button>
+    </div>
+    <div class="note" id="saveNote"></div>
+  </div>
+</div>
+
+<div class="overlay" id="help" hidden>
+  <div class="panel scroll">
+    <div class="pHead"><b>إزاي ألعب</b><button type="button" class="x" data-close="help">رجوع</button></div>
+    <div class="help">
+      <div class="t">على الموبايل</div>
+      <div>العصا على الشمال: دفعة خفيفة مشي، دفعة كاملة جري</div><div>ضربة ورا ضربة = كومبو (جاب، كروس، هوك، بطن، أبركت)</div>
+      <div>مسكة: لازم يكون قريب وقدامك. لو مسكك، دوس بسرعة عشان تفلت</div><div>صد: دوس مطوّل</div>
+      <div>التقط: قرّب من الأداة لما اسمها يظهر. ارمي: وجّه العصا ناحية الرمية</div><div>الفتوة: لما الهيبة تتملى، ٧ ثواني قوة ودرع</div>
+      <div>بالسلاح: ضربة ورا ضربة بتبدّل بين الضربة بالجنب والرزعة من فوق (بتكسر الصد) والطعنة</div><div>الخصم بقى بيصد ويرد: متبقاش تضرب على طول، صد واستنى فتحة</div>
+      <div class="t">على الكمبيوتر</div>
+      <div><kbd>W A S D</kbd>حركة</div><div><kbd>J</kbd>ضربة <kbd>K</kbd>رِجل</div>
+      <div><kbd>L</kbd>مسكة <kbd>Space</kbd>صد</div><div><kbd>E</kbd>التقط/ارمي <kbd>F</kbd>الفتوة <kbd>Shift</kbd>تفادي</div>
+      <div class="t">حقوق</div>
+      <div style="grid-column: 1 / -1; font-size: 11px; direction: ltr; text-align: left; color: var(--muted)">Characters: Microsoft Rocketbox Avatar Library (MIT, © 2020 Microsoft). Motion capture: CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu, created with funding from NSF EIA-0196217); Quaternius Universal Animation Library (CC0). Lighting: Poly Haven HDRI (CC0). Fonts: Cairo, Aref Ruqaa, Reem Kufi (SIL Open Font License 1.1). Engine: three.js (MIT). Full notices in CREDITS.txt.</div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="levels" hidden>
+  <div class="panel wide">
+    <div class="pHead"><b>المستويات</b><div class="tabs" id="chTabs"></div><button type="button" class="x" data-close="levels">رجوع</button></div>
+    <div class="chSub" id="chSub"></div>
+    <div class="lvGrid scroll" id="lvGrid"></div>
+  </div>
+</div>
+
+<div class="overlay" id="pre" hidden>
+  <div class="panel wide">
+    <div class="pHead"><b id="preTitle"></b><button type="button" class="x" data-close="pre">رجوع</button></div>
+    <div class="preBody scroll">
+      <div class="foeCard">
+        <div id="preFoes"></div>
+        <div class="envLine" id="preEnv"></div>
+        <div class="meter"><span>القوة</span><i><b id="preStr"></b></i></div>
+                <div class="note" id="preInfo"></div>
+      </div>
+      <div class="loadout">
+        <div class="lh">سلاحك من المتجر</div><div class="chips" id="preWeap"></div>
+        <div class="lh">تقويات للخناقة دي</div><div class="chips" id="preBoost"></div>
+      </div>
+    </div>
+    <button type="button" class="go" id="fightBtn">ادخل الخناقة</button>
+  </div>
+</div>
+
+<div class="overlay" id="shop" hidden>
+  <div class="panel wide">
+    <div class="pHead"><b>المتجر</b><div class="coins"><span class="coin"></span><b id="sCoins">٠</b></div><button type="button" class="x" data-close="shop">رجوع</button></div>
+    <div class="shopList scroll" id="shopList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="cardDlg" hidden>
+  <div class="panel cardPanel">
+    <div class="pHead"><b>كارت الفتوة</b><button type="button" class="x" data-close="cardDlg">رجوع</button></div>
+    <div class="cardWrap"><img id="cardImg" alt="كارت الفتوة"><div class="cardSide"><div class="sub">انشر كارتك وتحدى صحابك يكسروا أرقامك.</div><button type="button" class="go" id="shareBtn">شارك الكارت</button><div class="note" id="shareNote"></div></div></div>
+  </div>
+</div>
+
+<div class="overlay" id="end" hidden>
+  <div class="card">
+    <div class="result" id="endTitle"></div>
+    <div class="stars" id="endStars"></div>
+    <div class="sub" id="endSub"></div>
+    <div class="endBtns">
+      <button type="button" class="go" id="nextBtn">المستوى الجاي</button>
+      <button type="button" class="ghost" id="againBtn">عيد الخناقة</button>
+      <button type="button" class="ghost" id="endMenuBtn">القايمة</button>
+      <button type="button" class="ghost" id="endCardBtn">كارت الفتوة</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="loader" role="status">
+  <div class="card">
+    <div class="title" style="font-size:56px">فتوة</div>
+    <div class="sub" id="ls">بنجهز الحارة…</div>
+    <div class="track"><div class="fill" id="lf"></div></div>
+    <div id="err" hidden></div>
+  </div>
+</div>
+
+</div>
+<script type="importmap">{"imports":{"three":"./three/three.module.js","three/addons/":"./three/addons/"}}</script>
+<script type="module">
+import { startGame } from './game.js';
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+function layout() { const w = innerWidth, h = innerHeight; root.style.setProperty('--vw', w + 'px'); root.style.setProperty('--vh', h + 'px'); root.classList.toggle('rot', h > w); root.style.setProperty('--fh', Math.min(w, h) + 'px'); }
+// menus scroll by finger in the game's own frame: when the phone is upright the game is turned sideways,
+// so an up/down swipe in the player's view arrives as a sideways swipe; the page also blocks native panning for the fight
+(function touchScroll() {
+  let el = null, lx = 0, ly = 0, vel = 0, raf = 0, dist = 0, lastT = 0;
+  const scroller = (t) => { for (let n = t; n && n.nodeType === 1 && n !== document.body; n = n.parentElement) { const oy = getComputedStyle(n).overflowY; if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 2) return n; } return null; };
+  const along = (dx, dy) => root.classList.contains('rot') ? dx : dy;   // movement along the game's vertical axis
+  document.addEventListener('touchstart', (e) => { const ov = e.target.closest && e.target.closest('.overlay'); if (!ov || e.touches.length !== 1) { el = null; return; } cancelAnimationFrame(raf); el = scroller(e.target); lx = e.touches[0].clientX; ly = e.touches[0].clientY; vel = 0; dist = 0; lastT = performance.now(); }, { passive: true });
+  document.addEventListener('touchmove', (e) => { if (!el) return; const t = e.touches[0], d = along(t.clientX - lx, t.clientY - ly), now = performance.now(); lx = t.clientX; ly = t.clientY; dist += Math.abs(d);
+    // inner list at its end: hand the swipe to the outer page
+    if ((d > 0 && el.scrollTop <= 0) || (d < 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 1)) { const outer = scroller(el.parentElement); if (outer) el = outer; }
+    el.scrollTop -= d; vel = 0.8 * vel + 0.2 * d * 16 / Math.max(8, now - lastT); lastT = now; if (e.cancelable) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchend', () => { setTimeout(() => { dist = 0; }, 400); if (!el) return; const s = el; el = null; const step = () => { vel *= 0.93; s.scrollTop -= vel; if (Math.abs(vel) > 0.3) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); });
+  // a drag is a scroll, not a tap on whatever button it ended on
+  document.addEventListener('click', (e) => { if (dist > 10 && e.target.closest && e.target.closest('.overlay')) { e.stopPropagation(); e.preventDefault(); } dist = 0; }, true);
+})();
+layout(); addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(() => { layout(); dispatchEvent(new Event('resize')); }, 250));
+const ar = (n) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+let bannerT = 0, shoutTm = 0;
+const hudLast = {}, elCache = {};
+const el = (id) => elCache[id] || (elCache[id] = document.getElementById(id));
+const setW = (id, v) => { v = Math.round(Math.max(0, Math.min(100, v)) * 2) / 2; if (hudLast[id] !== v) { hudLast[id] = v; el(id).style.width = v + '%'; } };
+const setC = (id, c, on) => { const k = id + c; if (hudLast[k] !== on) { hudLast[k] = on; el(id).classList.toggle(c, on); } };
+const ui = {
+  step(t, p) { $('ls').textContent = t; $('lf').style.width = p + '%'; },
+  banner(txt, ms) { const b = $('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), ms); },
+  shout(txt) { const s = $('shout'); s.textContent = '«' + txt + '»'; s.classList.add('on'); clearTimeout(shoutTm); shoutTm = setTimeout(() => s.classList.remove('on'), 1800); },
+  pop(txt, side) { const box = $(side === 'l' ? 'popL' : 'popR'); const b = document.createElement('b'); b.textContent = txt; box.appendChild(b); setTimeout(() => b.remove(), 950); },
+  hud(s) {
+    // write to the DOM only when a value changed (rounded): avoids a style/layout pass every frame
+    setW('hp1', s.hp1); setW('t1', s.hp1); setW('hp2', s.hp2); setW('t2', s.hp2);
+    if (s.hp3 != null) { setW('hp3', s.hp3); setW('t3', s.hp3); } setC('nm2', 'tgt', s.tgt === 0); setC('nm3', 'tgt', s.tgt === 1); setW('hb1', s.h1); setW('hb2', s.h2); setW('hype', s.hype);
+    setC('hb1w', 'full', s.h1 >= 100); setC('hb2w', 'full', s.h2 >= 100);
+    const c = ar(s.t); if (hudLast.clock !== c) { hudLast.clock = c; $('clock').textContent = c; }
+    setC('bFin', 'ready', s.fin === 'ready'); setC('bFin', 'active', s.fin === 'active'); setC('bFin', 'cool', s.fin === 'cool');
+    const fl = s.fin === 'active' ? 'فتوة ' + ar(s.finT) : s.fin === 'cool' ? 'استنى ' + ar(s.finT) : 'الفتوة'; if (hudLast.fl !== fl) { hudLast.fl = fl; $('finLbl').textContent = fl; } setC('bItem', 'ready', s.canPick || !!s.item);
+    const il = s.item ? (s.ranged ? 'نشّن' : 'ارمي') : 'التقط'; if (hudLast.il !== il) { hudLast.il = il; $('itemLbl').textContent = il; }
+    const w = $('weapon'); if (hudLast.item !== !!s.item) { hudLast.item = !!s.item; w.hidden = !s.item; }
+    if (s.item) { if ($('wName').textContent !== s.item) $('wName').textContent = s.item; const key = s.dur + '/' + s.maxDur; if (w.dataset.k !== key) { w.dataset.k = key; $('wPips').innerHTML = Array.from({ length: s.maxDur }, (_, i) => `<i class="${i < s.dur ? 'on' : ''}"></i>`).join(''); } }
+  },
+  showEnd(kind, st) {
+    if (!kind) { $('end').hidden = true; return; }
+    $('endTitle').textContent = kind === 'win' ? 'الفتوة كسب!' : 'دهشان كسب المرة دي';
+    $('endSub').textContent = kind === 'win' ? `رجّعت القهوة لأبوك في ${ar(st.time)} ثانية، وصحتك ${ar(st.hp)}٪. الحارة كلها بتهتف باسمك.` : 'قوم واتعلم من الخناقة دي: استخدم الصد والأدوات، واستنى الهيبة تتملى.';
+    $('end').hidden = false; $('againBtn').focus();
+  },
+  setQuality(q) { $('qBtn').textContent = 'جودة: ' + (q === 'high' ? 'عالية' : 'سريعة'); $('qBtn').dataset.q = q; },
+  bindButtons(cb) {
+    document.querySelectorAll('#pad button').forEach(b => {
+      const act = b.dataset.act;
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.classList.add('down'); try { b.setPointerCapture(e.pointerId); } catch (x) {} cb(act, true); });
+      const up = () => { b.classList.remove('down'); cb(act, false); };
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+      b.addEventListener('click', (e) => { if (e.detail === 0) { cb(act, true); setTimeout(() => cb(act, false), 120); } });
+    });
+  },
+  bindJoystick(cb) {
+    const joy = $('joy'), knob = $('knob'); let id = null;
+    const move = (e) => { const r = joy.getBoundingClientRect(); const rad = Math.min(r.width, r.height) / 2; let sx = (e.clientX - r.left - r.width / 2) / rad, sy = (e.clientY - r.top - r.height / 2) / rad; let x = sx, y = sy; if (root.classList.contains('rot')) { x = sy; y = -sx; } const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } knob.style.transform = `translate(${x * 38}px, ${y * 38}px)`; cb(x, -y); };
+    joy.addEventListener('pointerdown', (e) => { id = e.pointerId; joy.setPointerCapture(id); move(e); });
+    joy.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e); });
+    const end = (e) => { if (e.pointerId !== id) return; id = null; knob.style.transform = ''; cb(0, 0); };
+    joy.addEventListener('pointerup', end); joy.addEventListener('pointercancel', end);
+  },
+};
+$('qBtn').addEventListener('click', () => { const q = $('qBtn').dataset.q === 'high' ? 'low' : 'high'; ui.setQuality(q); ui.onQuality && ui.onQuality(q); });
+$('mBtn').addEventListener('click', () => { const m = $('mBtn').getAttribute('aria-pressed') !== 'true'; $('mBtn').setAttribute('aria-pressed', String(m)); $('mBtn').textContent = m ? 'الصوت: مقفول' : 'الصوت'; ui.onMute && ui.onMute(m); });
+// ================================================================ menus, progression, shop, card
+import('./meta.js').then(async (META) => {
+  const { LEVELS, CHAPTERS, SHOP, openStore, settle, drawCard, shareCard, rankOf, ARENAS, TIME_NAMES, WEATHER_NAMES, WEAPON_NAMES, THREAT_MAX } = META;
+  const store = await openStore(); const S = () => store.data;
+  let api = null, cur = null, chap = 1, lastCard = null, picked = { weapon: null, boosts: {} };
+  const show = (id) => { for (const o of ['nameDlg', 'menu', 'levels', 'pre', 'shop', 'cardDlg', 'help', 'end']) $(o).hidden = o !== id; };
+  const hideAll = () => show(null);
+  const nameOf = () => 'المعلم ' + (S().name || '');
+  const starStr = (n) => '★'.repeat(n) + '<span class="off">' + '★'.repeat(3 - n) + '</span>';
+  ui.names = (names) => { names = [].concat(names); $('nm1').textContent = nameOf(); $('nm2').textContent = names[0]; $('duo2').hidden = names.length < 2; $('nm3').textContent = names[1] || ''; };
+  const foesTxt = (lv) => lv.foes.map(f => f.name).join(' و');
+  function refreshMenu() {
+    const s = S(); $('mName').textContent = nameOf(); $('mRank').textContent = rankOf(s); $('mCoins').textContent = ar(s.coins);
+    const lv = LEVELS[Math.min(49, s.level - 1)];
+    $('mNext').innerHTML = s.level > 50 ? '<b>خلّصت مصر كلها!</b> العب أي مستوى تاني وجمّع نجوم.' : `المستوى <b>${ar(lv.n)}</b> · ${ARENAS[lv.arena] || ''} · <b>${lv.place}</b> ${TIME_NAMES[lv.time] || ''} · ضد <b>${foesTxt(lv)}</b>${lv.duo ? ' (اتنين عليك)' : ''}`;
+    $('playBtn').textContent = s.level > 50 ? 'العب تاني' : (s.stats.fights ? 'كمّل المشوار' : 'ابدأ المشوار');
+    $('saveNote').textContent = store.where === 'cloud' ? 'تقدمك محفوظ على حسابك.' : 'تقدمك محفوظ على الجهاز ده.';
+  }
+  function menu() { api && api.toMenu(); refreshMenu(); show('menu'); }
+  store.onRemote = () => { if (!$('menu').hidden) refreshMenu(); };
+  // ---- name (first run)
+  $('nameForm').addEventListener('submit', (e) => { e.preventDefault(); const v = $('nameIn').value.trim().replace(/\s+/g, ' ').slice(0, 14); if (!v) return; S().name = v; store.save(); menu(); });
+  $('renameBtn').addEventListener('click', () => { $('nameIn').value = S().name || ''; show('nameDlg'); $('nameIn').focus(); });
+  // ---- levels
+  function renderLevels() {
+    $('chTabs').innerHTML = CHAPTERS.map(c => `<button type="button" data-ch="${c.n}" class="${c.n === chap ? 'on' : ''}">${ar(c.n)}. ${c.name}</button>`).join('');
+    $('chSub').textContent = CHAPTERS[chap - 1].sub;
+    const s = S();
+    $('lvGrid').innerHTML = LEVELS.filter(l => l.chapter === chap).map(l => { const lock = l.n > s.level, st = s.stars[l.n] || 0;
+      const tags = `<span class="tags"><i>${TIME_NAMES[l.time]}</i>${l.weather !== 'clear' ? `<i class="wx">${WEATHER_NAMES[l.weather]}</i>` : ''}${l.duo ? '<i class="duo">٢ عليك</i>' : ''}</span>`;
+      return `<button type="button" class="lv${lock ? ' lock' : ''}${l.n === s.level ? ' cur' : ''}${l.boss ? ' boss' : ''}" data-lv="${l.n}" ${lock ? 'aria-disabled="true"' : ''}><span class="n">${ar(l.n)}${l.boss ? ' · كبير' : ''}</span><span class="p">${l.place}</span><span class="f">${lock ? 'مقفول' : foesTxt(l)}</span>${tags}<span class="st">${lock ? '' : starStr(st)}</span></button>`; }).join('');
+  }
+  $('chTabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; chap = +b.dataset.ch; renderLevels(); });
+  $('lvGrid').addEventListener('click', (e) => { const b = e.target.closest('.lv'); if (!b || b.classList.contains('lock')) return; openPre(LEVELS[+b.dataset.lv - 1]); });
+  $('lvBtn').addEventListener('click', () => { chap = Math.min(5, Math.floor((Math.min(50, S().level) - 1) / 10) + 1); renderLevels(); show('levels'); });
+  // ---- pre-fight: opponent + loadout
+  function openPre(lv) {
+    cur = lv; const s = S();
+    $('preTitle').textContent = 'المستوى ' + ar(lv.n) + ' · ' + lv.place;
+    $('preFoes').innerHTML = lv.foes.map((f, i) => `<div class="foeRow"><div class="foeName">${f.name}</div><div class="foeNick">«${f.nick}»${i === 0 && lv.boss ? ' · كبير الفصل' : ''}${i === 1 ? ' · جاي معاه' : ''}</div><div class="wpn">${f.weapon ? 'معاه ' + WEAPON_NAMES[f.weapon] : 'بإيده'} · صحته ${ar(f.hp)}</div></div>`).join('');
+    $('preEnv').innerHTML = `<b>${ARENAS[lv.arena] || ''}</b><b>${TIME_NAMES[lv.time]}</b><b>${WEATHER_NAMES[lv.weather]}</b>${lv.duo ? '<b>اتنين على واحد</b>' : ''}`;
+    $('preStr').style.width = Math.round(12 + 88 * lv.threat / THREAT_MAX) + '%';
+    $('preInfo').textContent = `المكسب: ${ar(lv.reward)} جنيه أول مرة` + (lv.duo ? ' · واحد بيهجم والتاني بيلف وراك، اقلب بينهم' : '') + (lv.foes.some(f => f.weapon === 'nabla') ? ' · النبلة: اقرب منه أو صد' : '');
+    if (picked.weapon && !s.owned.includes(picked.weapon)) picked.weapon = null;
+    if (!picked.weapon && s.equip && s.owned.includes(s.equip)) picked.weapon = s.equip;
+    $('preWeap').innerHTML = `<button type="button" class="chip${picked.weapon ? '' : ' on'}" data-w="">إيدي بس</button>` + SHOP.weapons.map(w => `<button type="button" class="chip${picked.weapon === w.id ? ' on' : ''}" data-w="${w.id}" ${s.owned.includes(w.id) ? '' : 'disabled'}>${w.name}${s.owned.includes(w.id) ? '' : ' (اشتريه)'}</button>`).join('');
+    $('preBoost').innerHTML = SHOP.boosts.map(b => { const n = s.boosts[b.id] || 0; if (!n) picked.boosts[b.id] = false; return `<button type="button" class="chip${picked.boosts[b.id] ? ' on' : ''}" data-b="${b.id}" ${n ? '' : 'disabled'}>${b.name} ×${ar(n)}</button>`; }).join('');
+    show('pre');
+  }
+  $('preWeap').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (!b || b.disabled) return; picked.weapon = b.dataset.w || null; S().equip = picked.weapon; store.save(); openPre(cur); });
+  $('preBoost').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (!b || b.disabled) return; picked.boosts[b.dataset.b] = !picked.boosts[b.dataset.b]; openPre(cur); });
+  $('fightBtn').addEventListener('click', () => fight(cur));
+  async function fight(lv) {
+    const s = S(), lo = { weapon: picked.weapon };
+    for (const [k, on] of Object.entries(picked.boosts)) if (on && (s.boosts[k] || 0) > 0) { s.boosts[k]--; lo[k] = true; picked.boosts[k] = false; }
+    store.save(); cur = lv; hideAll(); $('nm1').textContent = nameOf();
+    await api.play(lv, lo);
+  }
+  $('playBtn').addEventListener('click', () => openPre(LEVELS[Math.min(49, S().level - 1)]));
+  // ---- shop
+  function renderShop() {
+    const s = S(); $('sCoins').textContent = ar(s.coins);
+    const price = (p) => `<span class="price"><span class="coin"></span>${ar(p)}</span>`;
+    $('shopList').innerHTML = '<div class="sec">أسلحة (بتفضل معاك)</div>' + SHOP.weapons.map(w => { const own = s.owned.includes(w.id);
+      return `<div class="sItem"><div class="nm2">${w.name}</div><div class="d">${w.desc}</div><div class="row">${price(w.price)}<button type="button" data-buy="${w.id}" ${own || s.coins < w.price ? 'disabled' : ''}>${own ? 'معاك' : 'اشتري'}</button></div></div>`; }).join('')
+      + '<div class="sec">تقويات (تتستخدم مرة في خناقة)</div>' + SHOP.boosts.map(b => `<div class="sItem"><div class="nm2">${b.name} <small>· معاك ${ar(s.boosts[b.id] || 0)}</small></div><div class="d">${b.desc}</div><div class="row">${price(b.price)}<button type="button" data-buy="${b.id}" ${s.coins < b.price ? 'disabled' : ''}>اشتري</button></div></div>`).join('');
+  }
+  $('shopList').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (!b || b.disabled) return; const id = b.dataset.buy, s = S();
+    const w = SHOP.weapons.find(x => x.id === id), bo = SHOP.boosts.find(x => x.id === id), it = w || bo; if (!it || s.coins < it.price) return;
+    s.coins -= it.price; if (w) { s.owned.push(id); s.equip = id; picked.weapon = id; } else s.boosts[id] = (s.boosts[id] || 0) + 1; store.save(); renderShop(); refreshMenu(); });
+  $('shopBtn').addEventListener('click', () => { renderShop(); show('shop'); });
+  // ---- futuwwa card
+  async function openCard() { show('cardDlg'); $('shareNote').textContent = 'بنرسم الكارت…'; lastCard = await drawCard(S()); $('cardImg').src = lastCard.url; $('shareNote').textContent = ''; }
+  $('cardBtn').addEventListener('click', openCard); $('endCardBtn').addEventListener('click', openCard);
+  $('shareBtn').addEventListener('click', async () => { if (!lastCard) return; const r = await shareCard(lastCard.blob, S().name || ''); $('shareNote').textContent = r === 'shared' ? 'اتنشر.' : r === 'saved' || r === 'downloaded' ? 'اتحفظ الكارت كصورة، انشره من الاستوديو.' : r === 'cancelled' ? '' : 'معرفتش أحفظ الصورة هنا، خد سكرين شوت للكارت.'; });
+  // ---- end of a fight
+  ui.onMatchEnd = (r) => {
+    const s = S(), lv = cur || LEVELS[0]; const out = settle(s, lv, r); store.save();
+    $('endTitle').textContent = r.win ? (r.ko ? 'ضربة قاضية!' : 'كسبت!') : 'خسرت المرة دي';
+    $('endStars').innerHTML = r.win ? starStr(out.stars) : '';
+    $('endSub').textContent = r.win ? `${nameOf()} غلب ${foesTxt(lv)} في ${ar(r.time)} ثانية. ضربات: ${ar(r.hits)} · أكبر كومبو: ${ar(r.bestCombo)} · كسبت ${ar(out.coins)} جنيه${out.unlocked && lv.n < 50 ? ' · اتفتح المستوى ' + ar(lv.n + 1) : ''}.`
+      : `${foesTxt(lv)} ${lv.duo ? 'كسبوا' : 'كسب'}. أخدت ${ar(out.coins)} جنيه مصاريف علاج. جرّب الصد والأدوات، واستنى الهيبة تتملى.`;
+    $('nextBtn').hidden = !r.win || lv.n >= 50; show('end');
+  };
+  $('nextBtn').addEventListener('click', () => openPre(LEVELS[Math.min(49, cur.n)]));
+  $('againBtn').addEventListener('click', () => fight(cur));
+  $('endMenuBtn').addEventListener('click', menu);
+  $('homeBtn').addEventListener('click', menu);
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { const t = b.dataset.close; if (t === 'pre' || t === 'cardDlg' || t === 'help' || t === 'shop' || t === 'levels') { if (t === 'pre' && !$('levels').dataset.from) {} menu(); } }));
+  $('helpBtn').addEventListener('click', () => show('help'));
+  // ---- Android app: hardware back button and background pause
+  const CAP = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() ? window.Capacitor.Plugins : null;
+  if (CAP && CAP.App) {
+    CAP.App.addListener('backButton', () => {
+      const open = ['levels', 'pre', 'shop', 'cardDlg', 'help', 'end', 'nameDlg'].find(id => !$(id).hidden);
+      if (api && api.state !== 'menu' && !open) { menu(); return; }          // in a fight: back to the menu
+      if (open && open !== 'nameDlg') { menu(); return; }                      // a sub-screen: back to the menu
+      CAP.App.exitApp();                                                       // on the menu: leave the game
+    });
+    CAP.App.addListener('pause', () => { window.__fetwaWasPaused = !!window.__fetwaPaused; window.__fetwaPaused = true; });
+    CAP.App.addListener('resume', () => { window.__fetwaPaused = !!window.__fetwaWasPaused; });
+  }
+  window.__fetwaMeta = { store, LEVELS, fight: (n) => fight(LEVELS[n - 1]), openCard, menu, settle };
+  startGame(ui).then((a) => { api = a; window.__fetwaApi = a; $('loader').hidden = true; if (!S().name) { show('nameDlg'); setTimeout(() => $('nameIn').focus(), 50); } else menu(); })
+    .catch((e) => { const el = $('err'); el.hidden = false; el.textContent = 'حصلت مشكلة في التحميل: ' + (e && e.message || e); console.error(e); });
+});
+</script>
+
+</body></html>

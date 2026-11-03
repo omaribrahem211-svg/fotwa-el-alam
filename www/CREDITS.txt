@@ -1,0 +1,39 @@
+FOTWA EL ALAM — CREDITS
+
+# Fotwa El Alam — third-party assets and licenses
+
+  Asset   Used for   Source   License   Commercial use  
+ --- --- --- --- --- 
+  Microsoft Rocketbox Avatar Library (12 male avatars + 16 animations)   Fighters, crowd, cheering/clapping/idle   github.com/microsoft/Microsoft-Rocketbox   MIT (Copyright (c) 2020 Microsoft) — keep the notice   Yes  
+  CMU Graphics Lab Motion Capture Database (Motionbuilder-friendly BVH conversion)   Boxing footwork, punches, kicks, block, duck, stumble, falls, get-ups, two-person pull, pick-up, throw, swing, walk   mocap.cs.cmu.edu via github.com/una-dinosauria/cmu-mocap   Free for research and commercial products; the raw data may not be resold   Yes (inside the game)  
+  Quaternius Universal Animation Library (Standard)   Head/chest hit reactions, backwards knockdown, jog   quaternius.com, glTF copy github.com/J-Ponzo/gltf-universal-animation-library   CC0 1.0   Yes  
+  Poly Haven "Cobblestone Street Night" HDRI   Image-based lighting   polyhaven.com (copy at github.com/assetfs/polyhaven-hdri)   CC0 1.0   Yes  
+  Ground and wall textures (game/env)   Basalt paving, plaster relief   Generated for this project (texgen.py)   Owned by the project   Yes  
+
+Rejected on license grounds: Bandai Namco Research Motion Dataset (CC BY-NC 4.0), Ubisoft LAFAN1 (CC BY-NC-ND 4.0), Khronos "Sponza" textures (CRYENGINE limited license).
+Not reachable from the build machine (login + browser download required): Mixamo, Rokoko Motion Library, KinemIQ.
+
+CMU acknowledgement: The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.
+
+----- Microsoft Rocketbox license -----
+MIT License
+
+Copyright (c) 2020 Microsoft
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

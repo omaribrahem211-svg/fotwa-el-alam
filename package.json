@@ -1,0 +1,19 @@
+{
+  "name": "fotwa-el-alam",
+  "private": true,
+  "version": "1.0.0",
+  "description": "فتوة العالم: Egyptian futuwwa street-fighting game (Android build with Capacitor)",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/share": "^8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1"
+  }
+}

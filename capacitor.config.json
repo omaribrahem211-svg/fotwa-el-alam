@@ -1,0 +1,12 @@
+{
+  "appId": "com.asomygames.fotwa",
+  "appName": "فتوة العالم",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#0b0a10"
+  }
+}

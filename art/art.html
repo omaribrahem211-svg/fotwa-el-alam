@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face { font-family: 'Aref Ruqaa'; src: url('fonts/ArefRuqaa-Bold.ttf'); font-weight: 700; }
+@font-face { font-family: 'Cairo'; src: url('fonts/Cairo.ttf'); font-weight: 200 1000; }
+body { margin: 0; background: #222; }
+</style></head><body>
+<script>
+// drawn art for the app: icon (full / adaptive foreground / round), splash, feature graphic
+function bg(x, w, h) { const g = x.createRadialGradient(w * 0.5, h * 0.42, 0, w * 0.5, h * 0.5, Math.max(w, h) * 0.75); g.addColorStop(0, '#4a2412'); g.addColorStop(0.55, '#1f120a'); g.addColorStop(1, '#0b0a10'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  // faint mashrabiya lattice
+  x.save(); x.globalAlpha = 0.07; x.fillStyle = '#f2d98a'; const s = Math.max(w, h) / 26; for (let yy = 0; yy < h + s; yy += s) for (let xx = 0; xx < w + s; xx += s) { x.beginPath(); x.arc(xx + ((yy / s) % 2) * s / 2, yy, s * 0.22, 0, 7); x.fill(); } x.restore(); }
+function stick(x, cx, cy, len, ang, th) { x.save(); x.translate(cx, cy); x.rotate(ang);
+  const g = x.createLinearGradient(-th, 0, th, 0); g.addColorStop(0, '#3a1e0c'); g.addColorStop(0.45, '#8a5428'); g.addColorStop(1, '#2a1406'); x.fillStyle = g;
+  x.beginPath(); x.roundRect(-th / 2, -len / 2, th, len, th / 2); x.fill();
+  x.fillStyle = '#d9a441'; for (const t of [-0.36, -0.12, 0.12, 0.36]) { x.fillRect(-th * 0.58, len * t - th * 0.18, th * 1.16, th * 0.36); }   // brass rings
+  x.beginPath(); x.arc(0, -len / 2, th * 0.75, 0, 7); const k = x.createRadialGradient(-th * 0.2, -len / 2 - th * 0.2, 0, 0, -len / 2, th * 0.8); k.addColorStop(0, '#fff0b0'); k.addColorStop(1, '#a87420'); x.fillStyle = k; x.fill();
+  x.restore(); }
+function emblem(x, cx, cy, S, withWord = true) {   // S = emblem size
+  stick(x, cx, cy + S * 0.02, S * 0.95, -0.62, S * 0.075); stick(x, cx, cy + S * 0.02, S * 0.95, 0.62, S * 0.075);
+  if (!withWord) return;
+  x.save(); x.font = `700 ${S * 0.46}px "Aref Ruqaa"`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'rtl';
+  x.lineWidth = S * 0.05; x.strokeStyle = '#1a0c04'; x.lineJoin = 'round'; x.strokeText('فتوة', cx, cy + S * 0.02);
+  const g = x.createLinearGradient(0, cy - S * 0.25, 0, cy + S * 0.25); g.addColorStop(0, '#fff2c0'); g.addColorStop(0.5, '#f2c45a'); g.addColorStop(1, '#b07a1e'); x.fillStyle = g; x.fillText('فتوة', cx, cy + S * 0.02);
+  x.restore(); }
+window.draw = (kind, w, h, imgUrl) => new Promise(async (res) => {
+  await document.fonts.load('700 80px "Aref Ruqaa"'); await document.fonts.load('800 40px Cairo');
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  if (kind === 'icon' || kind === 'round') { bg(x, w, h); if (kind === 'round') { x.globalCompositeOperation = 'destination-in'; x.beginPath(); x.arc(w / 2, h / 2, w / 2, 0, 7); x.fill(); x.globalCompositeOperation = 'source-over'; } emblem(x, w / 2, h / 2, w * 0.86); }
+  if (kind === 'fg') { emblem(x, w / 2, h / 2, w * 0.6); }          // adaptive foreground: inside the 66/108 safe zone
+  if (kind === 'bgonly') { bg(x, w, h); }
+  if (kind === 'splash') { bg(x, w, h); const S = Math.min(w, h) * 0.62; emblem(x, w / 2, h * 0.46, S);
+    x.font = `800 ${S * 0.11}px Cairo`; x.textAlign = 'center'; x.fillStyle = '#c9b99a'; x.direction = 'rtl'; x.fillText('فتوة العالم', w / 2, h * 0.46 + S * 0.62); }
+  if (kind === 'feature') { const im = new Image(); im.src = imgUrl; await im.decode(); const k = Math.max(w / im.width, h / im.height); x.drawImage(im, 0, (h - im.height * k) / 2, im.width * k, im.height * k);
+    const g = x.createLinearGradient(w * 0.38, 0, w * 0.66, 0); g.addColorStop(0, 'rgba(10,6,3,0)'); g.addColorStop(1, 'rgba(10,6,3,0.9)'); x.fillStyle = g; x.fillRect(w * 0.38, 0, w * 0.62, h);
+    const cx = w * 0.79, tw = w * 0.38;
+    emblem(x, cx, h * 0.47, h * 0.78, false);
+    let fs = h * 0.26; x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `700 ${fs}px "Aref Ruqaa"`; while (x.measureText('فتوة العالم').width > tw && fs > 20) { fs -= 2; x.font = `700 ${fs}px "Aref Ruqaa"`; }
+    x.lineWidth = fs * 0.09; x.lineJoin = 'round'; x.strokeStyle = '#1a0c04'; x.strokeText('فتوة العالم', cx, h * 0.44);
+    const tg = x.createLinearGradient(0, h * 0.32, 0, h * 0.56); tg.addColorStop(0, '#fff2c0'); tg.addColorStop(1, '#d9a441'); x.fillStyle = tg; x.fillText('فتوة العالم', cx, h * 0.44);
+    let f2 = h * 0.07; x.font = `800 ${f2}px Cairo`; while (x.measureText('خناقات الحواري والأسواق').width > tw && f2 > 10) { f2 -= 1; x.font = `800 ${f2}px Cairo`; }
+    x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,0.7)'; x.strokeText('خناقات الحواري والأسواق', cx, h * 0.72); x.fillStyle = '#f2e6c9'; x.fillText('خناقات الحواري والأسواق', cx, h * 0.72); }
+  res(c.toDataURL('image/png'));
+});
+</script></body></html>
