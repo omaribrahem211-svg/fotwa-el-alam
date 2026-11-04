@@ -38,6 +38,18 @@ window.draw = (kind, w, h, imgUrl) => new Promise(async (res) => {
     const tg = x.createLinearGradient(0, h * 0.32, 0, h * 0.56); tg.addColorStop(0, '#fff2c0'); tg.addColorStop(1, '#d9a441'); x.fillStyle = tg; x.fillText('فتوة العالم', cx, h * 0.44);
     let f2 = h * 0.07; x.font = `800 ${f2}px Cairo`; while (x.measureText('خناقات الحواري والأسواق').width > tw && f2 > 10) { f2 -= 1; x.font = `800 ${f2}px Cairo`; }
     x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,0.7)'; x.strokeText('خناقات الحواري والأسواق', cx, h * 0.72); x.fillStyle = '#f2e6c9'; x.fillText('خناقات الحواري والأسواق', cx, h * 0.72); }
+  if (kind === 'fbcover') { const im = new Image(); im.src = imgUrl; await im.decode(); x.drawImage(im, 0, 0, w, h);
+    const g = x.createLinearGradient(0, 0, 0, h * 0.55); g.addColorStop(0, 'rgba(8,5,3,0.88)'); g.addColorStop(1, 'rgba(8,5,3,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h * 0.55);
+    const v = x.createRadialGradient(w / 2, h * 0.55, h * 0.3, w / 2, h * 0.55, w * 0.62); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)'); x.fillStyle = v; x.fillRect(0, 0, w, h);
+    const cx = w / 2, ty = h * 0.2; x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const fs = h * 0.2; x.font = `700 ${fs}px "Aref Ruqaa"`; const tw = x.measureText('فتوة العالم').width;
+    stick(x, cx - tw / 2 - fs * 0.55, ty, fs * 1.15, -0.5, fs * 0.1); stick(x, cx + tw / 2 + fs * 0.55, ty, fs * 1.15, 0.5, fs * 0.1);
+    x.lineWidth = fs * 0.09; x.lineJoin = 'round'; x.strokeStyle = '#1a0c04'; x.strokeText('فتوة العالم', cx, ty);
+    const tg = x.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2); tg.addColorStop(0, '#fff2c0'); tg.addColorStop(1, '#d9a441'); x.fillStyle = tg; x.fillText('فتوة العالم', cx, ty);
+    x.font = `800 ${h * 0.055}px Cairo`; x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,0.75)'; const sub = 'خناقات الحواري والأسواق… واحد بس هيلبس تاج فتوة مصر';
+    x.strokeText(sub, cx, ty + fs * 0.78); x.fillStyle = '#f2e6c9'; x.fillText(sub, cx, ty + fs * 0.78); }
+  if (kind === 'fbprofile') { bg(x, w, h); emblem(x, w / 2, h / 2, w * 0.7);
+    x.strokeStyle = 'rgba(217,164,65,0.55)'; x.lineWidth = w * 0.012; x.beginPath(); x.arc(w / 2, h / 2, w * 0.455, 0, 7); x.stroke(); }
   res(c.toDataURL('image/png'));
 });
 </script></body></html>
