@@ -50,6 +50,17 @@ window.draw = (kind, w, h, imgUrl) => new Promise(async (res) => {
     x.strokeText(sub, cx, ty + fs * 0.78); x.fillStyle = '#f2e6c9'; x.fillText(sub, cx, ty + fs * 0.78); }
   if (kind === 'fbprofile') { bg(x, w, h); emblem(x, w / 2, h / 2, w * 0.7);
     x.strokeStyle = 'rgba(217,164,65,0.55)'; x.lineWidth = w * 0.012; x.beginPath(); x.arc(w / 2, h / 2, w * 0.455, 0, 7); x.stroke(); }
+  if (kind === 'fbprofile2') { const im = new Image(); im.src = imgUrl; await im.decode();
+    // the hero fills the upper part of the circle, a little zoomed and shifted so his face sits above the centre
+    const k = (w / im.width) * 1.18, ox = (w - im.width * k) / 2 + w * 0.06, oy = -h * 0.02; x.drawImage(im, ox, oy, im.width * k, im.height * k);
+    const v = x.createRadialGradient(w / 2, h * 0.42, w * 0.2, w / 2, h / 2, w * 0.62); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,5,2,0.55)'); x.fillStyle = v; x.fillRect(0, 0, w, h);
+    const g = x.createLinearGradient(0, h * 0.5, 0, h); g.addColorStop(0, 'rgba(14,8,4,0)'); g.addColorStop(0.38, 'rgba(14,8,4,0.82)'); g.addColorStop(1, 'rgba(14,8,4,0.97)'); x.fillStyle = g; x.fillRect(0, h * 0.5, w, h * 0.5);
+    x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `800 ${h * 0.07}px Cairo`; x.fillStyle = '#f2e6c9'; x.lineWidth = h * 0.012; x.strokeStyle = 'rgba(0,0,0,0.8)'; x.strokeText('لعبة', w / 2, h * 0.66); x.fillText('لعبة', w / 2, h * 0.66);
+    let fs = h * 0.17; x.font = `700 ${fs}px "Aref Ruqaa"`; while (x.measureText('فتوة العالم').width > w * 0.74) { fs -= 2; x.font = `700 ${fs}px "Aref Ruqaa"`; }
+    const ty = h * 0.79; x.lineWidth = fs * 0.1; x.lineJoin = 'round'; x.strokeStyle = '#1a0c04'; x.strokeText('فتوة العالم', w / 2, ty);
+    const tg = x.createLinearGradient(0, ty - fs / 2, 0, ty + fs / 2); tg.addColorStop(0, '#fff2c0'); tg.addColorStop(0.55, '#f2c45a'); tg.addColorStop(1, '#b07a1e'); x.fillStyle = tg; x.fillText('فتوة العالم', w / 2, ty);
+    x.strokeStyle = '#d9a441'; x.lineWidth = w * 0.014; x.beginPath(); x.arc(w / 2, h / 2, w * 0.49, 0, 7); x.stroke(); }
   res(c.toDataURL('image/png'));
 });
 </script></body></html>
